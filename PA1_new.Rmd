@@ -1,0 +1,175 @@
+
+Background
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
+
+
+Data
+
+The training data for this project are available here:
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+
+The test data are available here:
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+The data for this project come from this source: http://groupware.les.inf.puc-rio.br/har. If you use the document you create for this class for any purpose please cite them as they have been very generous in allowing their data to be used for this kind of assignment.
+
+What you should submit
+
+The goal of your project is to predict the manner in which they did the exercise. This is the "classe" variable in the training set. You may use any of the other variables to predict with. You should create a report describing how you built your model, how you used cross validation, what you think the expected out of sample error is, and why you made the choices you did. You will also use your prediction model to predict 20 different test cases.
+
+1. Your submission should consist of a link to a Github repo with your R markdown and compiled HTML file describing your analysis. Please constrain the text of the writeup to < 2000 words and the number of figures to be less than 5. It will make it easier for the graders if you submit a repo with a gh-pages branch so the HTML page can be viewed online (and you always want to make it easy on graders :-).
+2. You should also apply your machine learning algorithm to the 20 test cases available in the test data above. Please submit your predictions in appropriate format to the programming assignment for automated grading. See the programming assignment for additional details.
+
+Reproducibility
+
+Due to security concerns with the exchange of R code, your code will not be run during the evaluation by your classmates. Please be sure that if they download the repo, they will be able to view the compiled HTML version of your analysis.
+
+####Download Files
+```{r, echo=TRUE, eval=FALSE}
+
+dataDir <- './data'
+dir.create(dataDir, showWarnings=FALSE, recursive=TRUE)
+
+fileUrl <- 'https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv'
+destFile <- file.path(dataDir, 'training.csv')
+#download.file(fileUrl, destfile=destFile)
+
+fileUrl <- 'https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv'
+destFile <- file.path(dataDir, 'testing.csv')
+#download.file(fileUrl, destfile=destFile)
+
+dateDownloaded<-date()
+dateDownloaded
+
+```
+
+####Load Data
+```{r, echo=TRUE}
+dataDir <- './data'
+srcFile <- file.path(dataDir, 'training.csv')
+training <- read.csv(srcFile, header=T)
+
+srcFile <- file.path(dataDir, 'testing.csv')
+testing <- read.csv(srcFile, header=T)
+```
+
+
+http://groupware.les.inf.puc-rio.br/har
+
+This human activity recognition research has traditionally focused on discriminating between different activities, i.e. to predict "which" activity was performed at a specific point in time (like with the Daily Living Activities dataset above). The approach we propose for the Weight Lifting Exercises dataset is to investigate "how (well)" an activity was performed by the wearer. The "how (well)" investigation has only received little attention so far, even though it potentially provides useful information for a large variety of applications,such as sports training.
+
+In this work (see the paper) we first define quality of execution and investigate three aspects that pertain to qualitative activity recognition: the problem of specifying correct execution, the automatic and robust detection of execution mistakes, and how to provide feedback on the quality of execution to the user. We tried out an on-body sensing approach (dataset here), but also an "ambient sensing approach" (by using Microsoft Kinect - dataset still unavailable)
+
+Six young health participants were asked to perform one set of 10 repetitions of the Unilateral Dumbbell Biceps Curl in five different fashions: exactly according to the specification (Class A), throwing the elbows to the front (Class B), lifting the dumbbell only halfway (Class C), lowering the dumbbell only halfway (Class D) and throwing the hips to the front (Class E).
+
+Class A corresponds to the specified execution of the exercise, while the other 4 classes correspond to common mistakes. Participants were supervised by an experienced weight lifter to make sure the execution complied to the manner they were supposed to simulate. The exercises were performed by six male participants aged between 20-28 years, with little weight lifting experience. We made sure that all participants could easily simulate the mistakes in a safe and controlled manner by using a relatively light dumbbell (1.25kg).
+
+Read more: http://groupware.les.inf.puc-rio.br/har#ixzz3LH6oRlBu
+
+#### EDA Prep
+```{r, echo=T}
+
+
+panel.pearson <- function(x, y, ...) {
+  horizontal <- (par("usr")[1] + par("usr")[2]) / 2;
+  vertical <- (par("usr")[3] + par("usr")[4]) / 2;
+  text(horizontal, vertical, format(cor(x,y)), digits=2)
+}
+
+```
+
+
+####EDA
+```{r, echo=TRUE}
+#plotds <- ds[sample(nrow(ds), 100),]
+
+#pairs(plotds[,c(58, 8:17)],pch=21, bg=c("red", "green3", "blue", 'black', 'purple')[unclass(plotds$classe)], upper.panel = panel.pearson)
+#pairs(plotds[,c(58, 18:27)],pch=21, bg=c("red", "green3", "blue", 'black', 'purple')[unclass(plotds$classe)], upper.panel = panel.pearson)
+#pairs(plotds[,c(58, 28:37)],pch=21, bg=c("red", "green3", "blue", 'black', 'purple')[unclass(plotds$classe)], upper.panel = panel.pearson)
+#pairs(plotds[,c(58, 38:47)],pch=21, bg=c("red", "green3", "blue", 'black', 'purple')[unclass(plotds$classe)], upper.panel = panel.pearson)
+#pairs(plotds[,c(58, 47:57)],pch=21, bg=c("red", "green3", "blue", 'black', 'purple')[unclass(plotds$classe)], upper.panel = panel.pearson)
+#pairs(plotds[,c(58,24,  59:65)], pch=21, bg=c("red", "green3", "blue", 'black', 'purple')[unclass(plotds$classe)], upper.panel = panel.pearson)
+
+#pairs(plotds[,c(58,24,  59:65)], pch=21, bg=c("red", "green3", "blue", 'black', 'purple')[unclass(plotds$classe)], upper.panel = panel.pearson)
+
+```
+
+#### Features Selection 
+```{r, echo=TRUE}
+library(caret)
+#ds_try <- ds[,c(58, 24, 59:65)]
+ds <- training[,c(1,2,3,4,5,6,7,8,9,10,11,37,38,39,40,41,42,43,44,45,46,47,48,49,60,61,62,63,64,65,66,67,68,84,85,86,113,114,115,116,117,118,119,120,121,122,123,124,151,152,153,154,155,156,157,158,159,160)]
+ds_try <- ds[,c(58, 8:57)]
+
+inTrain <- createDataPartition(y=ds_try$classe,
+                              p=0.7, list=FALSE)
+training_set <- ds_try[inTrain,]
+testing_set <- ds_try[-inTrain,]
+
+ds_try<-NULL
+ds<-NULL
+inTrain<-NULL
+
+library("doSNOW")
+cl<-makeCluster(7) #change the 2 to your number of CPU cores
+registerDoSNOW(cl)
+modFit <- train((training_set[,-1]), training_set$classe ,method="rf",prox=TRUE, ntree=100)
+modFit
+
+predictions <- predict(modFit,newdata=testing_set)
+predictions
+
+confusionMatrix(predictions,testing_set$classe)
+
+stopCluster(cl)
+
+imp <- varImp(modFit)
+imp
+
+                        
+```
+
+#### Run Model
+```{r, echo=TRUE}
+library(caret)
+
+ds <- training[,c(1,2,3,4,5,6,7,8,9,10,11,37,38,39,40,41,42,43,44,45,46,47,48,49,60,61,62,63,64,65,66,67,68,84,85,86,113,114,115,116,117,118,119,120,121,122,123,124,151,152,153,154,155,156,157,158,159,160)]
+ds_try = with(ds, 
+              data.frame
+                    (
+                      classe,
+                      roll_belt, pitch_forearm, yaw_belt, pitch_belt, magnet_dumbbell_z, 
+                      roll_forearm, magnet_dumbbell_y, accel_dumbbell_y, roll_dumbbell, accel_forearm_x, 
+                      magnet_dumbbell_x, magnet_belt_z, accel_dumbbell_z, accel_belt_z, magnet_belt_y, 
+                      gyros_belt_z, magnet_belt_x, roll_arm, yaw_arm, magnet_forearm_y   
+                    )
+              )
+
+inTrain <- createDataPartition(y=ds_try$classe, p=0.7, list=FALSE)
+training_set <- ds_try[inTrain,]
+testing_set <- ds_try[-inTrain,]
+
+ds<-NULL;
+ds_try<-NULL;
+training<-NULL;
+modFit <- NULL;
+inTrain<-NULL;
+
+library("doSNOW")
+cl<-makeCluster(6) #change the 2 to your number of CPU cores
+registerDoSNOW(cl)
+modFit <- train((training_set[,-1]), training_set$classe ,method="rf",prox=TRUE, ntree=500)
+modFit
+
+predictions <- predict(modFit,newdata=testing_set)
+predictions
+
+confusionMatrix(predictions,testing_set$classe)
+
+stopCluster(cl)
+
+```
+
